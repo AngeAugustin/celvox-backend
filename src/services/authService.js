@@ -43,7 +43,7 @@ export async function login(email, password, userAgent, ip, io = null) {
   );
 
   if (users.length === 0) {
-    throw new Error('Invalid credentials');
+    throw new Error('Identifiants invalides');
   }
 
   const user = users[0];
@@ -51,7 +51,7 @@ export async function login(email, password, userAgent, ip, io = null) {
 
   if (!isValid) {
     await auditLog(user.id, 'login_failed', { email, reason: 'invalid_password' }, ip, null, null);
-    throw new Error('Invalid credentials');
+    throw new Error('Identifiants invalides');
   }
 
   // Generate tokens
