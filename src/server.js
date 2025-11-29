@@ -19,8 +19,29 @@ app.set('trust proxy', 1);
 app.use(helmet());
 app.use(xss());
 
+// CORS configuration - accept multiple origins for development and production
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['http://localhost:3000'];
+
+// Add localhost for development if not already included
+if (process.env.NODE_ENV !== 'production' || process.env.ALLOW_LOCALHOST === 'true') {
+  if (!allowedOrigins.includes('http://localhost:3000')) {
+    allowedOrigins.push('http://localhost:3000');
+  }
+}
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -52,7 +73,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.APP_PORT || 4000;
+// Render provides PORT environment variable, fallback to APP_PORT or 4000
+const PORT = process.env.PORT || process.env.APP_PORT || 4000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

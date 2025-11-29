@@ -1,7 +1,7 @@
 {
-  "name": "bank-app-backend",
+  "name": "celvox-backend",
   "version": "1.0.0",
-  "description": "Banking application backend",
+  "description": "Celvox Banking application backend",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
