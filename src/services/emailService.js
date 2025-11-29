@@ -41,7 +41,7 @@ function getTransporter() {
   const isSecure = process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465';
   const port = parseInt(process.env.SMTP_PORT || '587');
   
-  // Configuration pour Hostinger
+  // Configuration optimisée pour Hostinger sur Render
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: port,
@@ -54,13 +54,21 @@ function getTransporter() {
     tls: {
       // Do not fail on invalid certificates (useful for some SMTP servers)
       rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
-      ciphers: 'SSLv3' // Some SMTP servers require specific cipher
+      // Remove SSLv3 cipher requirement - it's deprecated and can cause issues
+      minVersion: 'TLSv1.2'
     },
-    // Additional options for Hostinger
+    // Additional options for Hostinger on Render
     requireTLS: !isSecure, // Require TLS for non-secure connections
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    connectionTimeout: 60000, // 60 seconds (increased for Render network latency)
+    greetingTimeout: 30000, // 30 seconds
+    socketTimeout: 60000, // 60 seconds
+    // Retry and connection pooling options
+    pool: false, // Disable pooling for better compatibility
+    maxConnections: 1,
+    maxMessages: 1,
+    // Additional options for better reliability
+    logger: false, // Disable verbose logging
+    debug: false
   });
 
   // Verify connection
@@ -475,7 +483,10 @@ Ne répondez pas à cet email. Pour toute question, contactez notre support clie
     console.log(`✅ Password reset email sent to ${toEmail}`);
   } catch (error) {
     console.error('❌ Error sending password reset email:', error);
-    throw error; // Re-throw to handle in controller
+    // Don't throw - let the calling function handle it
+    // This prevents the entire password reset from failing if email fails
+    // The code is still generated and stored in the database
+    throw error; // Still throw for now, but it will be caught in passwordResetService
   }
 }
 
