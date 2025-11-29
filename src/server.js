@@ -16,7 +16,11 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Middleware
-app.use(helmet());
+// Configure Helmet to work with CORS
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false
+}));
 app.use(xss());
 
 // CORS configuration - accept multiple origins for development and production
@@ -31,6 +35,9 @@ if (process.env.NODE_ENV !== 'production' || process.env.ALLOW_LOCALHOST === 'tr
   }
 }
 
+// Log allowed origins for debugging
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -39,10 +46,14 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(cookieParser());
