@@ -34,13 +34,21 @@ export async function loginHandler(req, res) {
     const { accessToken, refreshToken, user } = await login(email, password, userAgent, ip);
 
     // Set refresh token cookie
-    res.cookie('refreshToken', refreshToken, {
+    // For cross-origin cookies (frontend on different domain), don't set domain
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: process.env.COOKIE_SAME_SITE || 'Lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      domain: process.env.COOKIE_DOMAIN
-    });
+    };
+    
+    // Only set domain if explicitly configured (for same-domain cookies)
+    // For cross-origin (Vercel frontend + Render backend), don't set domain
+    if (process.env.COOKIE_DOMAIN) {
+      cookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+    
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     res.json({ accessToken, user });
   } catch (error) {
@@ -68,12 +76,19 @@ export async function logoutHandler(req, res) {
     const refreshToken = req.cookies.refreshToken;
     await logout(refreshToken);
 
-    res.clearCookie('refreshToken', {
+    // Clear cookie with same options as when it was set
+    const clearCookieOptions = {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: process.env.COOKIE_SAME_SITE || 'Lax',
-      domain: process.env.COOKIE_DOMAIN
-    });
+    };
+    
+    // Only set domain if it was set when creating the cookie
+    if (process.env.COOKIE_DOMAIN) {
+      clearCookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+    
+    res.clearCookie('refreshToken', clearCookieOptions);
 
     res.json({ message: 'Logged out successfully' });
   } catch (error) {

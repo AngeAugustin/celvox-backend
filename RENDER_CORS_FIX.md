@@ -63,10 +63,11 @@ JWT_REFRESH_SECRET=votre_secret_refresh_tres_securise
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=30d
 
-# Cookies
-COOKIE_DOMAIN=celvox-backend.onrender.com
+# Cookies (IMPORTANT pour cross-origin)
+# NE PAS définir COOKIE_DOMAIN pour les cookies cross-origin (frontend Vercel + backend Render)
 COOKIE_SECURE=true
 COOKIE_SAME_SITE=None
+# COOKIE_DOMAIN=  (laissez vide ou ne définissez pas cette variable)
 
 # Email (SMTP)
 SMTP_HOST=smtp.ethereal.email
