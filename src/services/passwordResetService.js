@@ -53,16 +53,7 @@ export async function requestPasswordReset(email) {
   );
 
   // Send email with code
-  try {
-    await sendPasswordResetEmail(user.email, user.name, code);
-  } catch (emailError) {
-    // Log the error but don't fail the request
-    // The code is still generated and stored, user can request it again if needed
-    console.error('❌ Error sending password reset email:', emailError);
-    // In production, you might want to queue the email for retry
-    // For now, we'll still return success to prevent revealing if email exists
-    // But log the error for monitoring
-  }
+  await sendPasswordResetEmail(user.email, user.name, code);
 
   return { success: true, message: 'If the email exists, a reset code has been sent.' };
 }

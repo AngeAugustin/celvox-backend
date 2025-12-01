@@ -1,86 +1,52 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-let transporter = null;
+let resend = null;
 
-function getTransporter() {
-  if (transporter) return transporter;
+function getResendClient() {
+  if (resend) return resend;
 
-  if (process.env.NODE_ENV === 'development' && !process.env.SMTP_USER) {
-    // Mock transporter for development
-    transporter = {
-      sendMail: async (options) => {
-        console.log('📧 Email would be sent:', {
-          to: options.to,
-          subject: options.subject,
-          text: options.text
-        });
-        return { messageId: 'mock-message-id' };
+  if (process.env.NODE_ENV === 'development' && !process.env.RESEND_API_KEY) {
+    // Mock client for development
+    resend = {
+      emails: {
+        send: async (options) => {
+          console.log('📧 Email would be sent:', {
+            to: options.to,
+            subject: options.subject,
+            from: options.from
+          });
+          return { id: 'mock-message-id', error: null };
+        }
       }
     };
-    return transporter;
+    return resend;
   }
 
-  // Check if SMTP is configured
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️  SMTP non configuré. Les emails ne seront pas envoyés.');
-    transporter = {
-      sendMail: async (options) => {
-        console.log('📧 Email would be sent (SMTP not configured):', {
-          to: options.to,
-          subject: options.subject
-        });
-        return { messageId: 'mock-message-id' };
+  // Check if Resend API key is configured
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️  Resend API key non configurée. Les emails ne seront pas envoyés.');
+    resend = {
+      emails: {
+        send: async (options) => {
+          console.log('📧 Email would be sent (Resend not configured):', {
+            to: options.to,
+            subject: options.subject
+          });
+          return { id: 'mock-message-id', error: null };
+        }
       }
     };
-    return transporter;
+    return resend;
   }
 
-  const isSecure = process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465';
-  const port = parseInt(process.env.SMTP_PORT || '587');
+  // Initialize Resend client
+  resend = new Resend(process.env.RESEND_API_KEY);
+  console.log('✅ Resend configuré avec succès');
   
-  // Configuration optimisée pour Hostinger sur Render
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: port,
-    secure: isSecure, // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    },
-    authMethod: 'PLAIN', // Force PLAIN authentication method
-    tls: {
-      // Do not fail on invalid certificates (useful for some SMTP servers)
-      rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
-      // Remove SSLv3 cipher requirement - it's deprecated and can cause issues
-      minVersion: 'TLSv1.2'
-    },
-    // Additional options for Hostinger on Render
-    requireTLS: !isSecure, // Require TLS for non-secure connections
-    connectionTimeout: 60000, // 60 seconds (increased for Render network latency)
-    greetingTimeout: 30000, // 30 seconds
-    socketTimeout: 60000, // 60 seconds
-    // Retry and connection pooling options
-    pool: false, // Disable pooling for better compatibility
-    maxConnections: 1,
-    maxMessages: 1,
-    // Additional options for better reliability
-    logger: false, // Disable verbose logging
-    debug: false
-  });
-
-  // Verify connection
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error('❌ Erreur de configuration SMTP:', error);
-    } else {
-      console.log('✅ Serveur SMTP configuré avec succès');
-    }
-  });
-
-  return transporter;
+  return resend;
 }
 
 export async function sendTransferEmail(toEmail, amount, description, senderName = null, senderEmail = null, platformName = 'CELVOX') {
@@ -90,8 +56,11 @@ export async function sendTransferEmail(toEmail, amount, description, senderName
       currency: 'EUR'
     }).format(amount);
 
-    const mailOptions = {
-      from: `${process.env.SMTP_FROM_NAME || platformName} <${process.env.SMTP_FROM || 'noreply@celvox.org'}>`,
+    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM || 'noreply@celvox.org';
+    const fromName = process.env.SMTP_FROM_NAME || platformName;
+    
+    const result = await getResendClient().emails.send({
+      from: `${fromName} <${fromEmail}>`,
       to: toEmail,
       subject: `Virement bancaire reçu - ${formattedAmount}`,
       html: `
@@ -205,29 +174,13 @@ export async function sendTransferEmail(toEmail, amount, description, senderName
           </div>
         </body>
         </html>
-      `,
-      text: `
-Virement bancaire reçu
-
-Bonjour,
-
-Vous avez reçu un virement bancaire de ${formattedAmount} sur la plateforme ${platformName}.
-
-${senderName || senderEmail ? `Expéditeur: ${senderName || ''} ${senderEmail || ''}` : ''}
-
-${description ? `Description: ${description}` : ''}
-
-Pour consulter votre solde et gérer vos comptes, connectez-vous à votre espace personnel :
-${process.env.FRONTEND_URL || 'http://localhost:3000'}/login
-
-Note importante : Si vous n'avez pas de compte sur ${platformName}, vous pouvez créer un compte gratuitement pour recevoir ce virement.
-
-Cet email a été envoyé automatiquement par ${platformName}.
-Ne répondez pas à cet email. Pour toute question, contactez notre support client.
       `
-    };
+    });
 
-    await getTransporter().sendMail(mailOptions);
+    if (result.error) {
+      throw new Error(result.error.message || 'Erreur lors de l\'envoi de l\'email');
+    }
+    
     console.log(`✅ Email de virement envoyé à ${toEmail}`);
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
@@ -240,9 +193,11 @@ export async function sendWelcomeEmail(toEmail, name) {
   try {
     const platformName = process.env.PLATFORM_NAME || 'CELVOX';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM || 'noreply@celvox.org';
+    const fromName = process.env.SMTP_FROM_NAME || platformName;
     
-    const mailOptions = {
-      from: `${process.env.SMTP_FROM_NAME || platformName} <${process.env.SMTP_FROM || 'noreply@celvox.org'}>`,
+    const result = await getResendClient().emails.send({
+      from: `${fromName} <${fromEmail}>`,
       to: toEmail,
       subject: `Bienvenue sur ${platformName}`,
       html: `
@@ -316,26 +271,13 @@ export async function sendWelcomeEmail(toEmail, name) {
           </div>
         </body>
         </html>
-      `,
-      text: `
-Bienvenue sur ${platformName}!
-
-Bonjour ${name},
-
-Votre compte a été créé avec succès sur ${platformName}.
-
-Vous pouvez maintenant vous connecter et commencer à utiliser nos services bancaires en ligne.
-
-Connectez-vous ici : ${frontendUrl}/login
-
-Nous sommes ravis de vous compter parmi nos clients !
-
-Cet email a été envoyé automatiquement par ${platformName}.
-Ne répondez pas à cet email. Pour toute question, contactez notre support client.
       `
-    };
+    });
 
-    await getTransporter().sendMail(mailOptions);
+    if (result.error) {
+      throw new Error(result.error.message || 'Erreur lors de l\'envoi de l\'email');
+    }
+    
     console.log(`✅ Welcome email sent to ${toEmail}`);
   } catch (error) {
     console.error('❌ Error sending welcome email:', error);
@@ -345,9 +287,11 @@ Ne répondez pas à cet email. Pour toute question, contactez notre support clie
 export async function sendPasswordResetEmail(toEmail, name, code) {
   try {
     const platformName = process.env.PLATFORM_NAME || 'CELVOX';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM || 'noreply@celvox.org';
+    const fromName = process.env.SMTP_FROM_NAME || platformName;
     
-    const mailOptions = {
-      from: `${process.env.SMTP_FROM_NAME || platformName} <${process.env.SMTP_FROM || 'noreply@celvox.org'}>`,
+    const result = await getResendClient().emails.send({
+      from: `${fromName} <${fromEmail}>`,
       to: toEmail,
       subject: `Réinitialisation de votre mot de passe - ${platformName}`,
       html: `
@@ -454,39 +398,17 @@ export async function sendPasswordResetEmail(toEmail, name, code) {
           </div>
         </body>
         </html>
-      `,
-      text: `
-Réinitialisation de votre mot de passe - ${platformName}
-
-Bonjour ${name},
-
-Vous avez demandé à réinitialiser votre mot de passe sur ${platformName}.
-
-Votre code de réinitialisation : ${code}
-
-Ce code est valide pendant 15 minutes uniquement.
-
-Important :
-- Ne partagez jamais ce code avec personne
-- Si vous n'avez pas demandé cette réinitialisation, ignorez cet email
-
-Accédez au formulaire de réinitialisation : ${process.env.FRONTEND_URL || 'http://localhost:3000'}/forgot-password
-
-Entrez ce code dans le formulaire de réinitialisation avec votre nouveau mot de passe.
-
-Cet email a été envoyé automatiquement par ${platformName}.
-Ne répondez pas à cet email. Pour toute question, contactez notre support client.
       `
-    };
+    });
 
-    await getTransporter().sendMail(mailOptions);
+    if (result.error) {
+      throw new Error(result.error.message || 'Erreur lors de l\'envoi de l\'email');
+    }
+    
     console.log(`✅ Password reset email sent to ${toEmail}`);
   } catch (error) {
     console.error('❌ Error sending password reset email:', error);
-    // Don't throw - let the calling function handle it
-    // This prevents the entire password reset from failing if email fails
-    // The code is still generated and stored in the database
-    throw error; // Still throw for now, but it will be caught in passwordResetService
+    throw error; // Re-throw to handle in controller
   }
 }
 

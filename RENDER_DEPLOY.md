@@ -69,16 +69,18 @@ COOKIE_SAME_SITE=None
 Pour `COOKIE_SECURE`, utilisez `true` en production (Render utilise HTTPS).  
 Pour `COOKIE_SAME_SITE`, utilisez `None` si votre frontend est sur un domaine différent.
 
-#### Email (SMTP)
+#### Email (Resend)
 ```
-SMTP_HOST=smtp.ethereal.email
-SMTP_PORT=587
-SMTP_USER=votre_email_smtp 
-SMTP_PASS=votre_mot_de_passe_smtp
-SMTP_FROM=noreply@celvox.com
+RESEND_API_KEY=re_votre_cle_api_ici
+RESEND_FROM_EMAIL=noreply@celvox.org
+SMTP_FROM_NAME=BankApp
 ```
 
-**Note** : Configurez un service SMTP réel (Gmail, SendGrid, Mailgun, etc.) pour la production.
+**Note** : 
+- Créez un compte sur https://resend.com
+- Créez une clé API dans API Keys
+- Vérifiez votre domaine dans Settings > Domains
+- Consultez `RESEND_CONFIG.md` pour plus de détails
 
 #### Application
 ```

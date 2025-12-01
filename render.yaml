@@ -13,7 +13,7 @@ services:
       # Les autres variables d'environnement doivent être configurées dans le dashboard Render
       # DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME
       # JWT_ACCESS_SECRET, JWT_REFRESH_SECRET
-      # SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+      # RESEND_API_KEY, RESEND_FROM_EMAIL, SMTP_FROM_NAME
       # FRONTEND_URL
       # COOKIE_DOMAIN, COOKIE_SECURE, COOKIE_SAME_SITE
       # MAX_DAILY_TRANSFER, ALLOW_OVERDRAFT

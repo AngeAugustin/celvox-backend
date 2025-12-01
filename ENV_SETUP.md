@@ -26,23 +26,16 @@ NODE_ENV=development
 # Pour la production, utilisez :
 FRONTEND_URL=https://celvox-bank.vercel.app
 
-# SMTP Configuration (Hostinger)
-# Si vous avez une erreur 535 (Authentication failed), essayez :
-# 1. Vérifiez que le mot de passe est correct dans Hostinger
-# 2. Essayez le port 465 avec SMTP_SECURE=true
-# 3. Assurez-vous que l'email existe bien dans Hostinger
-SMTP_HOST=smtp.hostinger.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=noreply@celvox.org
-SMTP_PASS=Celvox@2025
-SMTP_FROM=noreply@celvox.org
+# Email Configuration (Resend)
+# Pour obtenir une clé API Resend :
+# 1. Créez un compte sur https://resend.com
+# 2. Allez dans API Keys et créez une nouvelle clé
+# 3. Vérifiez votre domaine dans Settings > Domains
+RESEND_API_KEY=re_votre_cle_api_ici
+RESEND_FROM_EMAIL=noreply@celvox.org
 SMTP_FROM_NAME=BankApp
-SMTP_TLS_REJECT_UNAUTHORIZED=false
 
-# Alternative: Port 465 avec SSL (si 587 ne fonctionne pas)
-# SMTP_PORT=465
-# SMTP_SECURE=true
+# Note: SMTP_FROM est conservé pour compatibilité, mais RESEND_FROM_EMAIL est utilisé en priorité
 
 # Business Rules
 MAX_DAILY_TRANSFER=5000
@@ -52,12 +45,24 @@ ALLOW_OVERDRAFT=false
 ## Vérification
 
 Une fois le fichier créé, redémarrez le serveur backend. Vous devriez voir :
-- ✅ `Serveur SMTP configuré avec succès` si la configuration est correcte
+- ✅ `Resend configuré avec succès` si la configuration est correcte
 
 ## Test d'envoi d'email
 
-Pour tester l'envoi d'emails, effectuez un virement par email depuis l'interface. Le destinataire recevra un email avec :
+Pour tester la configuration Resend, exécutez :
+```bash
+npm run test-email
+```
+
+Pour tester l'envoi d'emails en conditions réelles, effectuez un virement par email depuis l'interface. Le destinataire recevra un email avec :
 - Le montant du virement
 - Les informations de l'expéditeur
 - Un lien pour accéder à son compte
+
+## Configuration Resend
+
+1. **Créer un compte Resend** : https://resend.com
+2. **Créer une clé API** : Allez dans API Keys et créez une nouvelle clé
+3. **Vérifier votre domaine** : Allez dans Settings > Domains et ajoutez/vérifiez votre domaine
+4. **Ajouter les variables d'environnement** : Ajoutez `RESEND_API_KEY` et `RESEND_FROM_EMAIL` dans votre `.env`
 

@@ -13,7 +13,7 @@
     "migrate-audit-logs": "node src/db/migrate-audit-logs.js",
     "migrate-account-number": "node src/db/migrate-account-number.js",
     "seed": "node src/db/seed.js",
-    "test-smtp": "node test-smtp.js",
+    "test-email": "node test-email.js",
     "test-pending": "node test-pending-transfers.js",
     "test-complete": "node test-complete-pending.js",
     "check-accounts": "node check-accounts.js"
@@ -32,7 +32,7 @@
     "cors": "^2.8.5",
     "express-validator": "^7.0.1",
     "joi": "^17.11.0",
-    "nodemailer": "^6.9.7",
+    "resend": "^3.2.0",
     "socket.io": "^4.6.1",
     "cookie-parser": "^1.4.6",
     "xss-clean": "^0.1.3"

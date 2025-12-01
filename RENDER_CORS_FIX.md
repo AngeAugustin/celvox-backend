@@ -69,12 +69,10 @@ COOKIE_SECURE=true
 COOKIE_SAME_SITE=None
 # COOKIE_DOMAIN=  (laissez vide ou ne définissez pas cette variable)
 
-# Email (SMTP)
-SMTP_HOST=smtp.ethereal.email
-SMTP_PORT=587
-SMTP_USER=votre_email_smtp
-SMTP_PASS=votre_mot_de_passe_smtp
-SMTP_FROM=noreply@celvox.com
+# Email (Resend)
+RESEND_API_KEY=re_votre_cle_api_ici
+RESEND_FROM_EMAIL=noreply@celvox.org
+SMTP_FROM_NAME=BankApp
 
 # Application
 NODE_ENV=production

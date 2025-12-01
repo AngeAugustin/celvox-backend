@@ -101,15 +101,14 @@ export async function forgotPasswordHandler(req, res) {
     const { email } = req.body;
     
     if (!email) {
-      return res.status(400).json({ error: 'Email est requis' });
+      return res.status(400).json({ error: 'Email is required' });
     }
 
     const result = await requestPasswordReset(email);
     res.json(result);
   } catch (error) {
     console.error('Forgot password error:', error);
-    // Don't reveal internal errors to user, return generic message
-    res.status(500).json({ error: 'Une erreur est survenue. Veuillez réessayer plus tard.' });
+    res.status(500).json({ error: error.message || 'An error occurred' });
   }
 }
 
